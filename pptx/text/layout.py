@@ -15,7 +15,7 @@ class TextFitter(tuple):
         return tuple.__new__(cls, (line_source, width, height, font_file))
 
     @classmethod
-    def best_fit_font_size(cls, text, extents, max_size, font_file):
+    def best_fit_font_size(cls, text, extents, max_size, font_file, line_height=1.0):
         """Return whole-number best fit point size less than or equal to `max_size`.
 
         The return value is the largest whole-number point size less than or equal to
@@ -24,14 +24,14 @@ class TextFitter(tuple):
         """
         line_source = _LineSource(text)
         text_fitter = cls(line_source, extents, font_file)
-        return text_fitter._best_fit_font_size(max_size)
+        return text_fitter._best_fit_font_size(max_size, line_height)
 
-    def _best_fit_font_size(self, max_size):
+    def _best_fit_font_size(self, max_size, line_height=1.0):
         """
         Return the largest whole-number point size less than or equal to
         *max_size* that this fitter can fit.
         """
-        predicate = self._fits_inside_predicate
+        predicate = self._fits_inside_predicate(line_height)
         sizes = _BinarySearchTree.from_ordered_sequence(range(1, int(max_size) + 1))
         return sizes.find_max(predicate)
 
@@ -62,8 +62,7 @@ class TextFitter(tuple):
 
         return predicate
 
-    @property
-    def _fits_inside_predicate(self):
+    def _fits_inside_predicate(self, line_height):
         """Return  function taking an integer point size argument.
 
         The function returns |True| if the text in this fitter can be wrapped to fit
@@ -77,8 +76,12 @@ class TextFitter(tuple):
             when rendered at `point_size` using the font defined in `font_file`.
             """
             text_lines = self._wrap_lines(self._line_source, point_size)
+            if not text_lines:
+                # text does not fit
+                return False
+
             cy = _rendered_size("Ty", point_size, self._font_file)[1]
-            return (cy * len(text_lines)) <= self._height
+            return (line_height * cy * len(text_lines)) <= self._height
 
         return predicate
 
@@ -104,10 +107,18 @@ class TextFitter(tuple):
         *line_source* wrapped within this fitter when rendered at
         *point_size*.
         """
-        text, remainder = self._break_line(line_source, point_size)
+        break_lines = self._break_line(line_source, point_size)
+        if not break_lines:
+            # it does not fit, no options...
+            return None
+
+        text, remainder = break_lines
         lines = [text]
         if remainder:
-            lines.extend(self._wrap_lines(remainder, point_size))
+            wrapped_lines = self._wrap_lines(remainder, point_size)
+            if not wrapped_lines:
+                return None
+            lines.extend(wrapped_lines)
         return lines
 
 

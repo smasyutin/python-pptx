@@ -29,22 +29,22 @@ class DescribeTextFitter(object):
         _best_fit_font_size_ = method_mock(
             request, TextFitter, "_best_fit_font_size", return_value=36
         )
-        extents, max_size = (19, 20), 42
+        extents, max_size, line_height = (19, 20), 42, 1.1
 
         font_size = TextFitter.best_fit_font_size(
-            "Foobar", extents, max_size, "foobar.ttf"
+            "Foobar", extents, max_size, "foobar.ttf", line_height
         )
 
         _LineSource_.assert_called_once_with("Foobar")
         _init_.assert_called_once_with(line_source_, extents, "foobar.ttf")
-        _best_fit_font_size_.assert_called_once_with(ANY, max_size)
+        _best_fit_font_size_.assert_called_once_with(ANY, max_size, line_height)
         assert font_size == 36
 
     def it_finds_best_fit_font_size_to_help_best_fit(self, _best_fit_fixture):
         text_fitter, max_size, _BinarySearchTree_ = _best_fit_fixture[:3]
-        sizes_, predicate_, font_size_ = _best_fit_fixture[3:]
+        sizes_, predicate_, font_size_, line_height_ = _best_fit_fixture[3:]
 
-        font_size = text_fitter._best_fit_font_size(max_size)
+        font_size = text_fitter._best_fit_font_size(max_size, line_height_)
 
         _BinarySearchTree_.from_ordered_sequence.assert_called_once_with(
             range(1, max_size + 1)
@@ -76,7 +76,7 @@ class DescribeTextFitter(object):
         _rendered_size_.return_value = (None, 50)
         text_fitter = TextFitter(line_source_, extents, "foobar.ttf")
 
-        predicate = text_fitter._fits_inside_predicate
+        predicate = text_fitter._fits_inside_predicate(line_height=1.0)
         result = predicate(point_size)
 
         _wrap_lines_.assert_called_once_with(text_fitter, line_source_, point_size)
@@ -142,6 +142,7 @@ class DescribeTextFitter(object):
         sizes_ = _BinarySearchTree_.from_ordered_sequence.return_value
         predicate_ = _fits_inside_predicate_.return_value
         font_size_ = sizes_.find_max.return_value
+        line_height_ = 1.1
         return (
             text_fitter,
             max_size,
@@ -149,6 +150,7 @@ class DescribeTextFitter(object):
             sizes_,
             predicate_,
             font_size_,
+            line_height_,
         )
 
     @pytest.fixture(params=[(49, True), (50, True), (51, False)])
@@ -167,7 +169,7 @@ class DescribeTextFitter(object):
 
     @pytest.fixture
     def _fits_inside_predicate_(self, request):
-        return property_mock(request, TextFitter, "_fits_inside_predicate")
+        return method_mock(request, TextFitter, "_fits_inside_predicate")
 
     @pytest.fixture
     def line_source_(self, request):
