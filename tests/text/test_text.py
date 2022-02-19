@@ -127,13 +127,14 @@ class DescribeTextFrame(object):
         assert text_frame._element.xml == expected_xml
 
     def it_can_resize_its_text_to_best_fit(self, request, text_prop_):
-        family, max_size, bold, italic, font_file, font_size = (
+        family, max_size, bold, italic, font_file, font_size, line_height = (
             "Family",
             42,
             "bold",
             "italic",
             "font_file",
             21,
+            1.1
         )
         text_prop_.return_value = "some text"
         _best_fit_font_size_ = method_mock(
@@ -142,23 +143,23 @@ class DescribeTextFrame(object):
         _apply_fit_ = method_mock(request, TextFrame, "_apply_fit")
         text_frame = TextFrame(None, None)
 
-        text_frame.fit_text(family, max_size, bold, italic, font_file)
+        text_frame.fit_text(family, max_size, bold, italic, font_file, line_height)
 
         _best_fit_font_size_.assert_called_once_with(
-            text_frame, family, max_size, bold, italic, font_file
+            text_frame, family, max_size, bold, italic, font_file, line_height
         )
         _apply_fit_.assert_called_once_with(text_frame, family, font_size, bold, italic)
 
     def it_calculates_its_best_fit_font_size_to_help_fit_text(self, size_font_fixture):
         text_frame, family, max_size, bold, italic = size_font_fixture[:5]
         FontFiles_, TextFitter_, text, extents = size_font_fixture[5:9]
-        font_file_, font_size_ = size_font_fixture[9:]
+        font_file_, font_size_, line_height = size_font_fixture[9:]
 
-        font_size = text_frame._best_fit_font_size(family, max_size, bold, italic, None)
+        font_size = text_frame._best_fit_font_size(family, max_size, bold, italic, None, line_height)
 
         FontFiles_.find.assert_called_once_with(family, bold, italic)
         TextFitter_.best_fit_font_size.assert_called_once_with(
-            text, extents, max_size, font_file_
+            text, extents, max_size, font_file_, line_height
         )
         assert font_size is font_size_
 
@@ -369,7 +370,7 @@ class DescribeTextFrame(object):
     @pytest.fixture
     def size_font_fixture(self, FontFiles_, TextFitter_, text_prop_, _extents_prop_):
         text_frame = TextFrame(None, None)
-        family, max_size, bold, italic = "Family", 42, True, False
+        family, max_size, bold, italic, line_height = "Family", 42, True, False, 1.1
         text, extents, font_size, font_file = "text", (111, 222), 21, "f.ttf"
         text_prop_.return_value = text
         _extents_prop_.return_value = extents
@@ -387,6 +388,7 @@ class DescribeTextFrame(object):
             extents,
             font_file,
             font_size,
+            line_height,
         )
 
     @pytest.fixture(

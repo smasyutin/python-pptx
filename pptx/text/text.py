@@ -63,6 +63,7 @@ class TextFrame(Subshape):
         bold=False,
         italic=False,
         font_file=None,
+        line_height=1.0
     ):
         """Fit text-frame text entirely within bounds of its shape.
 
@@ -82,7 +83,7 @@ class TextFrame(Subshape):
             return  # pragma: no cover
 
         font_size = self._best_fit_font_size(
-            font_family, max_size, bold, italic, font_file
+            font_family, max_size, bold, italic, font_file, line_height
         )
         self._apply_fit(font_family, font_size, bold, italic)
 
@@ -226,7 +227,7 @@ class TextFrame(Subshape):
         self.word_wrap = True
         self._set_font(font_family, font_size, is_bold, is_italic)
 
-    def _best_fit_font_size(self, family, max_size, bold, italic, font_file):
+    def _best_fit_font_size(self, family, max_size, bold, italic, font_file, line_height=1.0):
         """
         Return the largest integer point size not greater than *max_size*
         that allows all the text in this text frame to fit inside its extents
@@ -237,7 +238,7 @@ class TextFrame(Subshape):
         if font_file is None:
             font_file = FontFiles.find(family, bold, italic)
         return TextFitter.best_fit_font_size(
-            self.text, self._extents, max_size, font_file
+            self.text, self._extents, max_size, font_file, line_height
         )
 
     @property
