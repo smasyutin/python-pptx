@@ -100,8 +100,14 @@ class _BaseShapes(ParentedElementProxy):
         """Add a new placeholder shape based on *placeholder*."""
         sp = placeholder.element
         ph_type, orient, sz, idx = (sp.ph_type, sp.ph_orient, sp.ph_sz, sp.ph_idx)
+        from pptx.exc import InvalidXmlError
+        try:
+            ph_name = sp.nvSpPr.cNvPr.name
+        except InvalidXmlError:
+            ph_name = None
+
         id_ = self._next_shape_id
-        name = self._next_ph_name(ph_type, id_, orient)
+        name = self._next_name(ph_name, id_) if ph_name else self._next_ph_name(ph_type, id_, orient)
         self._spTree.add_placeholder(id_, name, ph_type, orient, sz, idx)
 
     def ph_basename(self, ph_type):
@@ -198,6 +204,26 @@ class _BaseShapes(ParentedElementProxy):
             name = "%s %d" % (basename, numpart)
             if name not in names:
                 break
+            numpart += 1
+
+        return name
+
+    def _next_name(self, basename, id):
+        """
+        Next unique name for *basename* with id number *id*.
+        Usually will be original name suffixed with id-1, e.g.
+        _next_name("name", 4) ==> 'name 3'.
+        The number is incremented as necessary to make the name unique within the collection.
+        """
+        # start with basename
+        name = basename
+
+        # increment numpart as necessary to make name unique
+        numpart = id - 1
+        names = self._spTree.xpath("//p:cNvPr/@name")
+        # if no such a name, use it from the start, no index needed
+        while name in names:
+            name = "%s %d" % (basename, numpart)
             numpart += 1
 
         return name

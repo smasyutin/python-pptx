@@ -138,6 +138,11 @@ class Describe_BaseShapes(object):
         shapes.clone_placeholder(placeholder_)
         assert shapes._element.xml == expected_xml
 
+    def it_can_clone_a_placeholder_with_name(self, clone_ph_with_name_fixture):
+        shapes, placeholder_, expected_xml = clone_ph_with_name_fixture
+        shapes.clone_placeholder(placeholder_)
+        assert shapes._element.xml == expected_xml
+
     def it_knows_if_turbo_add_is_enabled(self, turbo_fixture):
         shapes, expected_value = turbo_fixture
         turbo_add_enabled = shapes.turbo_add_enabled
@@ -168,6 +173,21 @@ class Describe_BaseShapes(object):
         )
         placeholder_.element = element(
             "p:sp/p:nvSpPr/p:nvPr/p:ph{type=chart,idx=42,orient=vert,sz=half" "}"
+        )
+        return shapes, placeholder_, expected_xml
+
+    @pytest.fixture
+    def clone_ph_with_name_fixture(self, placeholder_):
+        shapes = SlideShapes(element("p:spTree{a:b=c}"), None)
+        expected_xml = xml(
+            "p:spTree{a:b=c}/p:sp/(p:nvSpPr/("
+            "p:cNvPr{id=1,name=My Shiny Placeholder},"
+            "p:cNvSpPr/a:spLocks{noGrp=1},"
+            "p:nvPr/p:ph{type=chart,idx=42,orient=vert,sz=half}),p:spPr)"
+        )
+        placeholder_.element = element(
+            "p:sp/p:nvSpPr/(p:cNvPr{id=111,name=My Shiny Placeholder},"
+            "p:nvPr/p:ph{type=chart,idx=42,orient=vert,sz=half})"
         )
         return shapes, placeholder_, expected_xml
 
